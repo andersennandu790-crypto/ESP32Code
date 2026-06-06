@@ -1,37 +1,52 @@
 #include <Arduino.h>
 
-int ledPins[] = {13, 12, 14};
-bool ledStates[] = {false, false, false};
-int ledCount = 3;
+int motorPins[] = {13, 12, 14, 27};
+int stepDelay = 5;
+
+int stepSequence[8][4] = {
+  {1, 0, 0, 0},
+  {1, 1, 0, 0},
+  {0, 1, 0, 0},
+  {0, 1, 1, 0},
+  {0, 0, 1, 0},
+  {0, 0, 1, 1},
+  {0, 0, 0, 1},
+  {1, 0, 0, 1}
+};
+
+void setStep(int stepIndex) {
+  for (int i = 0; i < 4; i++) {
+    digitalWrite(motorPins[i], stepSequence[stepIndex][i]);
+  }
+}
+
+void rotateSteps(int steps, bool clockwise) {
+  for (int i = 0; i < steps; i++) {
+    int stepIndex = clockwise ? i % 8 : 7 - (i % 8);
+    setStep(stepIndex);
+    delay(stepDelay);
+  }
+}
+
+void stopMotor() {
+  for (int i = 0; i < 4; i++) {
+    digitalWrite(motorPins[i], LOW);
+  }
+}
 
 void setup() {
-  Serial.begin(115200);
-
-  for (int i = 0; i < ledCount; i++) {
-    pinMode(ledPins[i], OUTPUT);
-    digitalWrite(ledPins[i], LOW);
+  for (int i = 0; i < 4; i++) {
+    pinMode(motorPins[i], OUTPUT);
+    digitalWrite(motorPins[i], LOW);
   }
-
-  Serial.println("Serial LED Control Ready");
-  Serial.println("Send 1, 2, or 3 to toggle LEDs");
 }
 
 void loop() {
-  if (Serial.available() > 0) {
-    char command = Serial.read();
+  rotateSteps(2048, true);
+  stopMotor();
+  delay(1000);
 
-    if (command >= '1' && command <= '3') {
-      int index = command - '1';
-
-      ledStates[index] = !ledStates[index];
-      digitalWrite(ledPins[index], ledStates[index] ? HIGH : LOW);
-
-      Serial.print("LED");
-      Serial.print(index + 1);
-      Serial.print(" ");
-      Serial.println(ledStates[index] ? "ON" : "OFF");
-    } else if (command != '\n' && command != '\r') {
-      Serial.println("Unknown command");
-    }
-  }
+  rotateSteps(2048, false);
+  stopMotor();
+  delay(1000);
 }
